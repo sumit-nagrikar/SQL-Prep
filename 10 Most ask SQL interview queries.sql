@@ -327,3 +327,40 @@ VALUES
 	(5, 102, '2024-11-17', 150),
 	(6, 101, '2024-11-18', 400);
     
+WITH ranked_orders AS (
+    SELECT 
+        order_id,
+        customer_id,
+        order_date,
+        total_amount,
+        ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date DESC) AS `rank`
+    FROM orders
+)
+SELECT order_id, customer_id, order_date, total_amount
+FROM ranked_orders
+WHERE `rank` <= 3
+ORDER BY customer_id, `rank`;
+
+-- 9. calaculate the median salary of employees
+
+WITH ranked_salaries AS (
+	SELECT salary,
+		   ROW_NUMBER() OVER (ORDER BY salary) AS `row_num`,
+           COUNT(*) OVER () AS `total_rows`
+	FROM employees
+)
+SELECT AVG(salary) AS median_salary
+FROM ranked_salaries
+WHERE row_num IN (total_rows/2, total_rows/2 + 1);
+
+/* Explanation:
+ROW_NUMBER(): Assigns a unique row number to each record ordered by the salary.
+COUNT(*) OVER (): Gets the total number of rows in the dataset.
+WHERE row_num IN (total_rows / 2, total_rows / 2 + 1): For an even number of rows, this selects the two middle elements.
+AVG(salary): If the rows are even, it calculates the average of the two middle values to get the median.
+For odd rows, it ensures that the middle value is selected.
+Key Points:
+This query works for both odd and even numbers of rows.
+You can adjust the condition based on the total count of rows to calculate the median accurately. */
+
+
